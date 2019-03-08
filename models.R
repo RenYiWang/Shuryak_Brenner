@@ -80,14 +80,17 @@ modified_yield <- function(r, t, t0, q, k, b, a, m) {
 # predictor variable with 5 values. 
 
 # Modified NTE term with categorical LET dependence
-mod_nte_term <- function(l, t, pe, k, alpha) { # Includes l and alpha.
-  return(alpha * l * nte_term(t, pe, k))
+l0 = 100
+alpha = 1/100
+
+mod_nte_term <- function(l, l0, t, pe, k, alpha) { # Includes l, l0 and alpha.
+  return( (l - exp(- l * alpha)) / l0 * nte_term(t, pe, k))
 }
 
 # Modified yield equation with categorical LET dependence (MLSBE)
-LET_yield <- function(r, l, t, t0, q, k, b, a, m, alpha) { # l is for LET, alpha is a parameter.
+LET_yield <- function(r, l, l0, t, t0, q, k, b, a, m, alpha) { # l is for LET, alpha is a parameter.
   pe <- equilibrium_probability(r, q)
-  return(b * (1 + a * te_term(r, t) + m * mod_nte_term(l, t, pe, k, alpha)) 
+  return(b * (1 + a * te_term(r, t) + m * mod_nte_term(l, l0, t, pe, k, alpha)) 
               * (1 - exp(- t / t0)))
 }
 
@@ -107,17 +110,19 @@ alt_palette <- rev(heat_hcl(5, h = c(0, -100), c = c(40, 80), l = c(75, 40), pow
 LET <- c(25, 60, 193, 250, 464) # Ne, Si, Fe 6, Fe 3, Nb
 
 ## Figure 0: Noisy plots of MLSBE with arbitrary parameter settings
-plot(NULL, xlim = c(0, 100), ylim = c(0, 10000),
+plot(NULL, xlim = c(0, 100), ylim = c(0, 25000), 
      ylab = "Tumor yield count", xlab = "Dose rate (cGy/day)")
+
+# Plot each HZE ion
 for (i in 1:length(LET)) {
-  points(1:100, LET_yield(r=0.01 * 1:100, l=LET[i], # dose rate up to 1 cGy/day,
+  points(1:100, LET_yield(r=0.01 * 1:100, l=LET[i], l0 = 100, # dose rate up to 1 cGy/day,
                           # LET taken from values set earlier.
                           t=365, t0=14, q=0.5, # Over a year, saturation point 
                           # is two weeks, 0.5 cGy/day is point in which 
                           # 50% of susceptible cells are activated.
-                          k=2, b=2, a=1, m=10, alpha = 0.004) # k, b, a, m, and
+                          k=2, b=2, a=1, m=10, alpha = 0.01) # k, b, a, m, and
                           # alpha chosen arbitrarily.
-         + rnorm(100, mean=0, sd=400), # Assumes Gaussian, second argument 
+         + rnorm(100, mean=0, sd=1000), # Assumes Gaussian, second argument 
          # can bias the noise.
          col = palette[i])
 }
